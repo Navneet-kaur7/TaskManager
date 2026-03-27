@@ -27,7 +27,7 @@ It supports authentication, role-based access (`ADMIN` / `USER`), task assignmen
 ### Auth
 - `POST /api/auth/register`
 - `POST /api/auth/login`
-- `POST /api/auth/recover/reactivate` (Emergency recovery)
+
 
 ### Users
 - `GET /api/users` (Admin)
@@ -48,34 +48,6 @@ Filter examples:
 - `GET /api/tasks?assignedTo=2`
 - `GET /api/tasks?status=IN_PROGRESS&assignedTo=2`
 
-## ERD
-
-```mermaid
-erDiagram
-  USERS {
-    BIGINT id PK
-    VARCHAR name
-    VARCHAR email UK
-    VARCHAR password_hash
-    VARCHAR role
-    BOOLEAN active
-    DATETIME created_at
-  }
-
-  TASKS {
-    BIGINT id PK
-    VARCHAR title
-    TEXT description
-    VARCHAR status
-    BIGINT assigned_to FK
-    BIGINT created_by FK
-    DATETIME created_at
-    DATETIME updated_at
-  }
-
-  USERS ||--o{ TASKS : created_by
-  USERS ||--o{ TASKS : assigned_to
-```
 
 ## Run Locally
 
