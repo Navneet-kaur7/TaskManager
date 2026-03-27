@@ -19,6 +19,13 @@ export default function TaskModal({ task, users, onSave, onClose }) {
         status: task.status || 'TODO',
         assignedToId: task.assignedTo?.id || '',
       })
+    } else {
+      setForm({
+        title: '',
+        description: '',
+        status: 'TODO',
+        assignedToId: '',
+      })
     }
   }, [task])
 
@@ -42,8 +49,8 @@ export default function TaskModal({ task, users, onSave, onClose }) {
       await onSave({
         title: form.title.trim(),
         description: form.description.trim(),
-        status: form.status,
-        assignedToId: form.assignedToId || null,
+        status: form.status || 'TODO',
+        assignedToId: form.assignedToId ? Number(form.assignedToId) : null,
       })
       onClose()
     } catch (err) {

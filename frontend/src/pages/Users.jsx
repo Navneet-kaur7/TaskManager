@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import api from '../utils/api'
+import { useAuth } from '../context/AuthContext'
 
 function initials(name) {
   return name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?'
 }
 
 export default function Users() {
+  const { user: currentUser } = useAuth()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -13,6 +15,7 @@ export default function Users() {
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'USER' })
   const [formErrors, setFormErrors] = useState({})
   const [saving, setSaving] = useState(false)
+  const [deactivatingId, setDeactivatingId] = useState(null)
 
   const fetchUsers = async () => {
     try {
@@ -57,6 +60,21 @@ export default function Users() {
     }
   }
 
+  const deactivateUser = async (u) => {
+    if (u.id === currentUser?.id) return
+    if (!confirm(`Deactivate ${u.name}? They will no longer be able to log in.`)) return
+    setDeactivatingId(u.id)
+    setError('')
+    try {
+      await api.patch(`/api/users/${u.id}/deactivate`)
+      await fetchUsers()
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to deactivate user')
+    } finally {
+      setDeactivatingId(null)
+    }
+  }
+
   return (
     <>
       <div className="page-header">
@@ -88,7 +106,9 @@ export default function Users() {
                 <th>User</th>
                 <th>Email</th>
                 <th>Role</th>
+                <th>Status</th>
                 <th>Joined</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -106,8 +126,27 @@ export default function Users() {
                       {u.role}
                     </span>
                   </td>
+                  <td>
+                    <span className={`badge ${u.active ? 'badge-user' : 'badge-todo'}`}>
+                      {u.active ? 'ACTIVE' : 'DEACTIVATED'}
+                    </span>
+                  </td>
                   <td style={{color:'var(--text-3)',fontSize:12,fontFamily:'DM Mono, monospace'}}>
                     {new Date(u.createdAt).toLocaleDateString()}
+                  </td>
+                  <td>
+                    {u.active ? (
+                      <button
+                        className="btn btn-danger btn-sm"
+                        disabled={u.id === currentUser?.id || deactivatingId === u.id}
+                        onClick={() => deactivateUser(u)}
+                        title={u.id === currentUser?.id ? 'You cannot deactivate your own account' : 'Deactivate user'}
+                      >
+                        {deactivatingId === u.id ? 'Deactivating…' : 'Deactivate'}
+                      </button>
+                    ) : (
+                      <span style={{color:'var(--text-3)',fontSize:12}}>—</span>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -2,10 +2,12 @@ package com.teamflow.controller;
 
 import com.teamflow.dto.AuthResponse;
 import com.teamflow.dto.LoginRequest;
+import com.teamflow.dto.RecoveryReactivateRequest;
 import com.teamflow.dto.RegisterRequest;
 import com.teamflow.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,11 +20,16 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest req) {
-        return ResponseEntity.ok(authService.register(req));
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(req));
     }
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest req) {
         return ResponseEntity.ok(authService.login(req));
+    }
+
+    @PostMapping("/recover/reactivate")
+    public ResponseEntity<AuthResponse> reactivate(@Valid @RequestBody RecoveryReactivateRequest req) {
+        return ResponseEntity.ok(authService.reactivateByRecovery(req));
     }
 }

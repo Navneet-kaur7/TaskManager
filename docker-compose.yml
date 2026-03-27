@@ -2,7 +2,7 @@ services:
   db:
     image: mysql:8
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-gill2000}
       MYSQL_DATABASE: taskdb
     ports:
       - "3307:3306"
@@ -21,8 +21,9 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/taskdb?useSSL=false&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-gill2000}
       JWT_SECRET: ${JWT_SECRET:-teamflow-secret-change-in-production-32chars!!}
+      RECOVERY_KEY: ${RECOVERY_KEY:-teamflow-recovery-dev-key}
     depends_on:
       db:
         condition: service_healthy

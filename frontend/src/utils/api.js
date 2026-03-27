@@ -8,7 +8,9 @@ const api = axios.create({
 api.interceptors.response.use(
   res => res,
   err => {
-    if (err.response?.status === 401) {
+    const status = err.response?.status
+    const message = String(err.response?.data?.message || '').toLowerCase()
+    if (status === 401 || (status === 403 && message.includes('deactivated'))) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       window.location.href = '/login'

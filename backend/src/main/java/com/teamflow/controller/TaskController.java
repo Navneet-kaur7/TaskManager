@@ -5,6 +5,7 @@ import com.teamflow.dto.TaskResponse;
 import com.teamflow.service.TaskService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,7 +32,7 @@ public class TaskController {
 
     @PostMapping
     public ResponseEntity<TaskResponse> create(@Valid @RequestBody TaskRequest req) {
-        return ResponseEntity.ok(taskService.create(req));
+        return ResponseEntity.status(HttpStatus.CREATED).body(taskService.create(req));
     }
 
     @PutMapping("/{id}")

@@ -50,7 +50,7 @@ export default function Dashboard() {
   }, [fetchTasks])
 
   useEffect(() => {
-    api.get('/api/users').then(res => setUsers(res.data)).catch(() => {})
+    api.get('/api/users/assignees').then(res => setUsers(res.data)).catch(() => {})
   }, [])
 
   const createTask = async (data) => {
@@ -207,10 +207,12 @@ export default function Dashboard() {
                           {task.status === 'TODO' ? '▶' : '✓'}
                         </button>
                       )}
-                      {(user?.role === 'ADMIN' || task.createdBy?.id === user?.id) && (
+                      {(user?.role === 'ADMIN' || task.createdBy?.id === user?.id || task.assignedTo?.id === user?.id) && (
                         <>
                           <button className="btn btn-ghost btn-sm" onClick={() => setModal(task)}>Edit</button>
-                          <button className="btn btn-danger btn-sm" onClick={() => deleteTask(task.id)}>Del</button>
+                          {user?.role === 'ADMIN' && (
+                            <button className="btn btn-danger btn-sm" onClick={() => deleteTask(task.id)}>Del</button>
+                          )}
                         </>
                       )}
                     </div>

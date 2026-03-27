@@ -44,11 +44,14 @@ export default function Layout() {
         <div className="sidebar-footer">
           <div className="user-cell">
             <div className="avatar">{initials(user?.name)}</div>
-            <div>
+            <div className="user-info">
               <strong>{user?.name}</strong>
-              <span className={`badge ${user?.role === 'ADMIN' ? 'badge-admin' : 'badge-user'}`} style={{marginTop: 3, display: 'inline-flex'}}>
-                {user?.role}
-              </span>
+              <div className="badge-row">
+                <span className={`badge ${user?.role === 'ADMIN' ? 'badge-admin' : 'badge-user'}`}>
+                  {user?.role}
+                </span>
+                <span className="status-indicator active" title="Active"></span>
+              </div>
             </div>
           </div>
           <button className="btn-logout" onClick={handleLogout}>Sign out</button>

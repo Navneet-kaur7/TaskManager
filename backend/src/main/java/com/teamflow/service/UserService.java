@@ -6,6 +6,7 @@ import com.teamflow.entity.User;
 import com.teamflow.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -21,6 +22,12 @@ public class UserService {
 
     public List<UserResponse> getAll() {
         return userRepo.findAll().stream()
+                .map(UserResponse::from)
+                .toList();
+    }
+
+    public List<UserResponse> getAssignableUsers() {
+        return userRepo.findByActiveTrueOrderByNameAsc().stream()
                 .map(UserResponse::from)
                 .toList();
     }
@@ -51,5 +58,52 @@ public class UserService {
                 .build();
 
         return UserResponse.from(userRepo.save(user));
+    }
+
+    public UserResponse deactivate(Long id) {
+        User user = userRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (user.getEmail().equalsIgnoreCase(currentEmail)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Admin cannot deactivate own account");
+        }
+
+        if (!user.isActive()) {
+            return UserResponse.from(user);
+        }
+
+        user.setActive(false);
+        return UserResponse.from(userRepo.save(user));
+    }
+
+    public UserResponse activate(Long id) {
+        User user = userRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (user.isActive()) {
+            return UserResponse.from(user);
+        }
+
+        user.setActive(true);
+        return UserResponse.from(userRepo.save(user));
+    }
+
+    public List<UserResponse> getAllAdmins() {
+        return userRepo.findAll().stream()
+                .filter(user -> user.getRole() == User.Role.ADMIN)
+                .map(UserResponse::from)
+                .toList();
+    }
+
+    public List<UserResponse> activateAllAdmins() {
+        return userRepo.findAll().stream()
+                .filter(user -> user.getRole() == User.Role.ADMIN && !user.isActive())
+                .peek(user -> {
+                    user.setActive(true);
+                    userRepo.save(user);
+                })
+                .map(UserResponse::from)
+                .toList();
     }
 }

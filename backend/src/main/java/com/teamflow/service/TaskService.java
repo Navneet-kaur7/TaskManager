@@ -23,8 +23,12 @@ public class TaskService {
 
     private User currentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepo.findByEmail(email)
+        User user = userRepo.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+        if (!user.isActive()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User account is deactivated");
+        }
+        return user;
     }
 
     public List<TaskResponse> getAll(String status, Long assignedTo) {
@@ -52,16 +56,24 @@ public class TaskService {
         User creator = currentUser();
 
         Task.Status status;
-        try {
-            status = Task.Status.valueOf(req.getStatus().toUpperCase());
-        } catch (IllegalArgumentException e) {
+        String requestedStatus = req.getStatus();
+        if (requestedStatus == null || requestedStatus.isBlank()) {
             status = Task.Status.TODO;
+        } else {
+            try {
+                status = Task.Status.valueOf(requestedStatus.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status: " + requestedStatus);
+            }
         }
 
         User assignedTo = null;
         if (req.getAssignedToId() != null) {
             assignedTo = userRepo.findById(req.getAssignedToId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Assigned user not found"));
+            if (!assignedTo.isActive()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot assign task to deactivated user");
+            }
         }
 
         Task task = Task.builder()
@@ -91,16 +103,23 @@ public class TaskService {
         }
 
         Task.Status status;
+        String requestedStatus = req.getStatus();
+        if (requestedStatus == null || requestedStatus.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status is required");
+        }
         try {
-            status = Task.Status.valueOf(req.getStatus().toUpperCase());
+            status = Task.Status.valueOf(requestedStatus.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status: " + req.getStatus());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status: " + requestedStatus);
         }
 
         User assignedTo = null;
         if (req.getAssignedToId() != null) {
             assignedTo = userRepo.findById(req.getAssignedToId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Assigned user not found"));
+            if (!assignedTo.isActive()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot assign task to deactivated user");
+            }
         }
 
         task.setTitle(req.getTitle());
@@ -117,11 +136,9 @@ public class TaskService {
 
         User current = currentUser();
         boolean isAdmin = current.getRole() == User.Role.ADMIN;
-        boolean isCreator = task.getCreatedBy().getId().equals(current.getId());
-
-        if (!isAdmin && !isCreator) {
+        if (!isAdmin) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Only the task creator or an admin can delete this task");
+                    "Only admin can delete tasks");
         }
 
         taskRepo.delete(task);

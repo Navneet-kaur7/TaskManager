@@ -1,196 +1,182 @@
-# TeamFlow — Task Management System
+# TeamFlow Lite - Task Management App
 
-A full-stack task management app built with React, Spring Boot, MySQL, and Docker.
+TeamFlow Lite is a full-stack task manager for small teams.  
+It supports authentication, role-based access (`ADMIN` / `USER`), task assignment, task status tracking, and user deactivation.
 
 ## Tech Stack
 
-- **Frontend**: React (Vite), React Router, Axios
-- **Backend**: Spring Boot 3, Spring Security (JWT), Spring Data JPA
-- **Database**: MySQL 8
-- **DevOps**: Docker Compose, GitHub Actions CI
+- Frontend: React + Vite + Axios
+- Backend: Spring Boot 3, Spring Security (JWT), Spring Data JPA
+- Database: MySQL 8
+- DevOps: Docker, Docker Compose, GitHub Actions
 
----
+## Features
 
-## Quick Start with Docker
+- Secure auth with hashed passwords and JWT login
+- Task CRUD with status workflow: `TODO`, `IN_PROGRESS`, `DONE`
+- Task filtering by `status` and `assignedTo` (combined filters supported)
+- Role-based authorization:
+  - `ADMIN`: manage users, view all tasks, delete tasks
+  - `USER`: create/update permitted tasks
+- User deactivation flow:
+  - Admin can deactivate users
+  - Deactivated users cannot login or call secured APIs
 
-```bash
-# 1. Copy environment file
-cp .env.example .env
+## API Overview
 
-# 2. Build backend JAR first
-cd backend && mvn clean package -DskipTests && cd ..
+### Auth
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/recover/reactivate` (Emergency recovery)
 
-# 3. Start everything
-docker compose up --build
+### Users
+- `GET /api/users` (Admin)
+- `GET /api/users/assignees` (Any authenticated user, active users only)
+- `GET /api/users/{id}` (Admin)
+- `POST /api/users` (Admin)
+- `PATCH /api/users/{id}/deactivate` (Admin)
+
+### Tasks
+- `POST /api/tasks`
+- `GET /api/tasks`
+- `GET /api/tasks/{id}`
+- `PUT /api/tasks/{id}`
+- `DELETE /api/tasks/{id}` (Admin only)
+
+Filter examples:
+- `GET /api/tasks?status=TODO`
+- `GET /api/tasks?assignedTo=2`
+- `GET /api/tasks?status=IN_PROGRESS&assignedTo=2`
+
+## ERD
+
+```mermaid
+erDiagram
+  USERS {
+    BIGINT id PK
+    VARCHAR name
+    VARCHAR email UK
+    VARCHAR password_hash
+    VARCHAR role
+    BOOLEAN active
+    DATETIME created_at
+  }
+
+  TASKS {
+    BIGINT id PK
+    VARCHAR title
+    TEXT description
+    VARCHAR status
+    BIGINT assigned_to FK
+    BIGINT created_by FK
+    DATETIME created_at
+    DATETIME updated_at
+  }
+
+  USERS ||--o{ TASKS : created_by
+  USERS ||--o{ TASKS : assigned_to
 ```
 
-- **Frontend**: http://localhost:4173
-- **Backend API**: http://localhost:8080
-
----
-
-## Local Development (without Docker)
+## Run Locally
 
 ### Prerequisites
+
 - Java 17+
 - Node 20+
 - MySQL 8 running locally
 
-### Backend
+### 1) Backend
 
 ```bash
 cd backend
-
-# Edit src/main/resources/application.properties if needed
-# Default expects MySQL at localhost:3306 with user=root, password=rootpassword
-
-mvn spring-boot:run
-# API available at http://localhost:8080
+./mvnw spring-boot:run
 ```
 
-### Frontend
+Backend runs at `http://localhost:8080`.
+
+Default local DB values come from `backend/src/main/resources/application.properties`:
+- URL: `jdbc:mysql://localhost:3306/taskdb?...`
+- Username: `root`
+- Password: `rootpassword`
+
+You can override with env vars:
+- `SPRING_DATASOURCE_URL`
+- `SPRING_DATASOURCE_USERNAME`
+- `SPRING_DATASOURCE_PASSWORD`
+- `JWT_SECRET`
+- `JWT_EXPIRATION`
+- `RECOVERY_KEY`
+
+### Emergency login recovery (all accounts deactivated)
+
+If every account is deactivated, call this endpoint once:
+
+```bash
+curl -X POST http://localhost:8080/api/auth/recover/reactivate \
+  -H "Content-Type: application/json" \
+  -d "{\"email\":\"admin@teamflow.com\",\"recoveryKey\":\"teamflow-recovery-dev-key\"}"
+```
+
+This reactivates that user and returns a JWT response.
+
+### 2) Frontend
 
 ```bash
 cd frontend
-npm install
+npm ci
 npm run dev
-# App available at http://localhost:5173
 ```
 
-The Vite dev server proxies `/api` calls to `http://localhost:8080` automatically.
+Frontend runs at `http://localhost:5173`.
 
----
+## Run with Docker
 
-## First-Time Setup
+### 1) Prepare env file
 
-1. Open the app and click **Create one** to register.
-2. **The very first user to register automatically becomes Admin.**
-3. Log in — you'll land on the Dashboard.
-4. As Admin, go to **Users** in the sidebar to add more team members.
-
-### Sample users (after manual creation)
-
-| Name | Email | Password | Role |
-|------|-------|----------|------|
-| Admin User | admin@teamflow.com | password123 | ADMIN |
-| Jane Doe | jane@teamflow.com | password123 | USER |
-
----
-
-## Project Structure
-
-```
-teamflow/
-├── docker-compose.yml
-├── .env.example
-├── .github/workflows/ci.yml
-│
-├── frontend/
-│   ├── Dockerfile
-│   ├── package.json
-│   ├── vite.config.js
-│   └── src/
-│       ├── App.jsx
-│       ├── index.css
-│       ├── context/AuthContext.jsx
-│       ├── utils/api.js
-│       ├── components/
-│       │   ├── Layout.jsx
-│       │   └── TaskModal.jsx
-│       └── pages/
-│           ├── Login.jsx
-│           ├── Register.jsx
-│           ├── Dashboard.jsx
-│           └── Users.jsx
-│
-└── backend/
-    ├── Dockerfile
-    ├── pom.xml
-    └── src/main/java/com/teamflow/
-        ├── TeamflowApplication.java
-        ├── config/GlobalExceptionHandler.java
-        ├── entity/         User.java, Task.java
-        ├── dto/            *Request.java, *Response.java
-        ├── repository/     UserRepository.java, TaskRepository.java
-        ├── service/        AuthService.java, UserService.java, TaskService.java
-        ├── controller/     AuthController.java, UserController.java, TaskController.java
-        └── security/       JwtUtil.java, JwtFilter.java, SecurityConfig.java, UserDetailsServiceImpl.java
+```bash
+cp .env.example .env
 ```
 
----
+### 2) Build backend jar
 
-## API Endpoints
-
-### Auth
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/api/auth/register` | Public | Register new user |
-| POST | `/api/auth/login` | Public | Login, returns JWT |
-
-### Users
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/api/users` | Any auth | List all users |
-| GET | `/api/users/{id}` | Admin | Get user by ID |
-| POST | `/api/users` | Admin | Create user |
-
-### Tasks
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/api/tasks` | Any auth | List tasks (filter: `?status=TODO&assignedTo=1`) |
-| GET | `/api/tasks/{id}` | Any auth | Get task by ID |
-| POST | `/api/tasks` | Any auth | Create task |
-| PUT | `/api/tasks/{id}` | Creator/Assignee/Admin | Update task |
-| DELETE | `/api/tasks/{id}` | Creator/Admin | Delete task |
-
----
-
-## Authorization Rules
-
-- **Admin**: Full access — all tasks, all users, create/delete anything
-- **User**: Create tasks; update tasks they created or are assigned to; delete own tasks only
-- **First registrant** is automatically promoted to Admin
-
----
-
-## Environment Variables
-
-| Variable | Default | Notes |
-|----------|---------|-------|
-| `MYSQL_ROOT_PASSWORD` | `rootpassword` | MySQL password |
-| `JWT_SECRET` | *(insecure default)* | **Change in production** — min 32 chars |
-| `JWT_EXPIRATION` | `86400000` | Token TTL in ms (24 hours) |
-
----
-
-## Database Schema (ERD)
-
-```
-users
-  id          PK
-  name
-  email       UNIQUE
-  password_hash
-  role        ENUM(ADMIN, USER)
-  created_at
-
-tasks
-  id          PK
-  title
-  description TEXT
-  status      ENUM(TODO, IN_PROGRESS, DONE)
-  assigned_to FK → users.id  (nullable)
-  created_by  FK → users.id
-  created_at
-  updated_at
+```bash
+cd backend
+./mvnw -DskipTests package
+cd ..
 ```
 
----
+### 3) Start stack
 
-## Known Limitations & Future Improvements
+```bash
+docker compose up --build
+```
 
-- No refresh tokens (JWT expires after 24h, user must re-login)
-- No pagination on task list
-- No email verification on registration
-- No audit log of task changes
-- Tests are skipped in CI (`-DskipTests`) — unit/integration tests would be a good next step
+Services:
+- Frontend: `http://localhost:4173`
+- Backend: `http://localhost:8080`
+- MySQL: `localhost:3307` (mapped from container `3306`)
+
+## Test Users and Flow
+
+### Initial setup
+
+1. Register the first account from UI (`/register`).
+2. The first registered user becomes `ADMIN`.
+3. Login and open **Users** page.
+
+### Recommended test flow
+
+1. As admin, create a normal user.
+2. As admin, create and assign tasks.
+3. Use task filters by status and assignee together.
+4. Change a task to `DONE`, then edit it again and update status (should work).
+5. Deactivate a user from **Users** page.
+6. Verify the deactivated user can no longer login.
+
+## CI
+
+CI workflow is at `.github/workflows/ci.yml` and runs:
+- Backend build/tests
+- Frontend build
+- Docker image builds
+
