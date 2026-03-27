@@ -14,7 +14,7 @@ It supports authentication, role-based access (`ADMIN` / `USER`), task assignmen
 
 - Secure auth with hashed passwords and JWT login
 - Task CRUD with status workflow: `TODO`, `IN_PROGRESS`, `DONE`
-- Task filtering by `status` and `assignedTo` (combined filters supported)
+- Task filtering by `status` and `assignedTo` 
 - Role-based authorization:
   - `ADMIN`: manage users, view all tasks, delete tasks
   - `USER`: create/update permitted tasks
