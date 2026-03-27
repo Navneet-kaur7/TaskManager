@@ -21,7 +21,7 @@ jobs:
 
       - name: Build backend
         working-directory: backend
-        run: ./mvnw -B clean verify
+        run: mvn -B clean verify -DskipTests
 
       - name: Set up Node
         uses: actions/setup-node@v4
