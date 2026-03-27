@@ -14,7 +14,7 @@ It supports authentication, role-based access (`ADMIN` / `USER`), task assignmen
 
 - Secure auth with hashed passwords and JWT login
 - Task CRUD with status workflow: `TODO`, `IN_PROGRESS`, `DONE`
-- Task filtering by `status` and `assignedTo` (combined filters supported)
+- Task filtering by `status` and `assignedTo` 
 - Role-based authorization:
   - `ADMIN`: manage users, view all tasks, delete tasks
   - `USER`: create/update permitted tasks
@@ -27,7 +27,7 @@ It supports authentication, role-based access (`ADMIN` / `USER`), task assignmen
 ### Auth
 - `POST /api/auth/register`
 - `POST /api/auth/login`
-- `POST /api/auth/recover/reactivate` (Emergency recovery)
+
 
 ### Users
 - `GET /api/users` (Admin)
@@ -48,34 +48,6 @@ Filter examples:
 - `GET /api/tasks?assignedTo=2`
 - `GET /api/tasks?status=IN_PROGRESS&assignedTo=2`
 
-## ERD
-
-```mermaid
-erDiagram
-  USERS {
-    BIGINT id PK
-    VARCHAR name
-    VARCHAR email UK
-    VARCHAR password_hash
-    VARCHAR role
-    BOOLEAN active
-    DATETIME created_at
-  }
-
-  TASKS {
-    BIGINT id PK
-    VARCHAR title
-    TEXT description
-    VARCHAR status
-    BIGINT assigned_to FK
-    BIGINT created_by FK
-    DATETIME created_at
-    DATETIME updated_at
-  }
-
-  USERS ||--o{ TASKS : created_by
-  USERS ||--o{ TASKS : assigned_to
-```
 
 ## Run Locally
 
@@ -97,27 +69,9 @@ Backend runs at `http://localhost:8080`.
 Default local DB values come from `backend/src/main/resources/application.properties`:
 - URL: `jdbc:mysql://localhost:3306/taskdb?...`
 - Username: `root`
-- Password: `rootpassword`
+- Password: `gill2000`
 
-You can override with env vars:
-- `SPRING_DATASOURCE_URL`
-- `SPRING_DATASOURCE_USERNAME`
-- `SPRING_DATASOURCE_PASSWORD`
-- `JWT_SECRET`
-- `JWT_EXPIRATION`
-- `RECOVERY_KEY`
 
-### Emergency login recovery (all accounts deactivated)
-
-If every account is deactivated, call this endpoint once:
-
-```bash
-curl -X POST http://localhost:8080/api/auth/recover/reactivate \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"admin@teamflow.com\",\"recoveryKey\":\"teamflow-recovery-dev-key\"}"
-```
-
-This reactivates that user and returns a JWT response.
 
 ### 2) Frontend
 
