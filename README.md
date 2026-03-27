@@ -97,27 +97,9 @@ Backend runs at `http://localhost:8080`.
 Default local DB values come from `backend/src/main/resources/application.properties`:
 - URL: `jdbc:mysql://localhost:3306/taskdb?...`
 - Username: `root`
-- Password: `rootpassword`
+- Password: `gill2000`
 
-You can override with env vars:
-- `SPRING_DATASOURCE_URL`
-- `SPRING_DATASOURCE_USERNAME`
-- `SPRING_DATASOURCE_PASSWORD`
-- `JWT_SECRET`
-- `JWT_EXPIRATION`
-- `RECOVERY_KEY`
 
-### Emergency login recovery (all accounts deactivated)
-
-If every account is deactivated, call this endpoint once:
-
-```bash
-curl -X POST http://localhost:8080/api/auth/recover/reactivate \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"admin@teamflow.com\",\"recoveryKey\":\"teamflow-recovery-dev-key\"}"
-```
-
-This reactivates that user and returns a JWT response.
 
 ### 2) Frontend
 
